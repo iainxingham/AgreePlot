@@ -1,0 +1,9 @@
+Package: agreeplot
+Type: Package
+Title: Functions to describe and plot agreement
+Version: 1.0
+Date: 2015-05-25
+Author: Iain Crossingham
+Maintainer: Iain Crossingham <yourfault@somewhere.net>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
