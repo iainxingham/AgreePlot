@@ -58,9 +58,39 @@ BAplot <- function(x, y=NULL, limit=1.96,
     
   # Subject defined
   else {
-    # Different methods in x and y
+    # Different methods in x and y - paired 
     if(!is.null(y)) {
-      #<to do>
+      if(length(x) != length(y))
+        stop("Should have paired measurements in x and y")
+      if(length(x) != length(subject))
+        stop("Subject and x vectors should be equal length")
+      if(!is.factor(subject)) stop("Subject should be a factor")
+      
+      tempdf <- data.frame(x, y, subject, diff=(x-y), avg=(x+y)/2)
+      anova_result <- anova(lm(diff~subject, data = tempdf))
+      
+      # Using dplyr for this - replace with aggregate()??
+      #sumdf <- tempdf %>%
+        #group_by(subject) %>%
+        #summarise(avg=mean(diff), stddev=sd(diff), num=n())
+      
+      # Calculate mean differences to plot
+      avgdiff <- aggregate(tempdf["diff"], by=tempdf["subject"], FUN=mean)
+      avgread <- aggregate(tempdf["avg"], by=tempdf["subject"], FUN=mean)
+      
+      # Calculate sd for limits of agreement
+      # <to do> Check handling of zeros here
+      mi <- aggregate(tempdf["diff"], by=tempdf["subject"], FUN=length)
+      divisor <- (sum(mi[2])^2 - sum(mi[2]^2)) / ((nrow(mi)-1) * sum(mi[2]))
+      stdev <- sqrt(anova_result[2,3] + 
+                      ((anova_result[1,3] - anova_result[2,3])/divisor))
+      LA <- mean(avgdiff) + c(0-limit, limit) * stdev 
+      
+      plot(avgread[2], avgdiff[2], type="p", xlab=xlab, ylab=ylab, 
+           main=main, ...)
+      abline(h=0, lty=2)
+      abline(h=LA[1])
+      abline(h=LA[2])
     }
     
     # x only, method defined

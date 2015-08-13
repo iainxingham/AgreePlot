@@ -94,18 +94,18 @@ drawcircle <- function(x, y, radius, nv=100) {
 #' 
 #' <details here>
 #' 
-#' @param x1, y1  numeric vectors of paired measurements - first reading
-#' @param x2, y2  numeric vectors of paired measurements - second reading
+#' @param x1,y1  numeric vectors of paired measurements - first reading
+#' @param x2,y2  numeric vectors of paired measurements - second reading
 #' @param exclusion     Central fraction to exclude
 #' @param exclude_mean  Fraction of what?
 #' @param regress_line  Include summary or comparison lines? Takes a value of
 #' \code{"none"} (draw no extra lines), \code{"x=y"} (the default - draw the
 #' line of perfect concordance), \code{"lm"} (draw the linear regression line
 #' y~x) or \code{"both"}
-#' @param regress_lty, regress_col Line type and colour to draw regression line
-#' @param xy_lty, xy_col  Line type and colour to draw the line x=y
-#' @param zone_density, zone_col  Passed to polygon to fill exclusion zone
-#' @param xlab, ylab, main,...  passed to plot
+#' @param regress_lty,regress_col Line type and colour to draw regression line
+#' @param xy_lty,xy_col  Line type and colour to draw the line x=y
+#' @param zone_density,zone_col  Passed to polygon to fill exclusion zone
+#' @param xlab,ylab,main,...  passed to plot
 #' 
 #' @examples <to do>
 #' 
@@ -150,8 +150,8 @@ fourquadplot <- function(x1, y1, x2, y2, exclusion=0.15,
 #' 
 #' <details here>
 #' 
-#' @param x1, y1  numeric vectors of paired measurements - first reading
-#' @param x2, y2  numeric vectors of paired measurements - second reading
+#' @param x1,y1  numeric vectors of paired measurements - first reading
+#' @param x2,y2  numeric vectors of paired measurements - second reading
 #' @param axis_ticks  number of ticks to include on axis
 #' @param limit_type  limit lines to be drawn. Takes a value of \code{"none"} 
 #' (no limit lines drawn), \code{"absolute"} (limit lines are drawn at +/- 
