@@ -96,6 +96,7 @@ drawcircle <- function(x, y, radius, nv=100) {
 #' 
 #' @param x1,y1  numeric vectors of paired measurements - first reading
 #' @param x2,y2  numeric vectors of paired measurements - second reading
+#' @param data   Optional data frame containing x1, y1, x2, and/or y2
 #' @param exclusion     Central fraction to exclude
 #' @param exclude_mean  Fraction of what?
 #' @param regress_line  Include summary or comparison lines? Takes a value of
@@ -105,11 +106,14 @@ drawcircle <- function(x, y, radius, nv=100) {
 #' @param regress_lty,regress_col Line type and colour to draw regression line
 #' @param xy_lty,xy_col  Line type and colour to draw the line x=y
 #' @param zone_density,zone_col  Passed to polygon to fill exclusion zone
-#' @param xlab,ylab,main,...  passed to plot
+#' @param xlab,ylab,main,...  passed to plot()
 #' 
 #' @examples <to do>
 #' 
-fourquadplot <- function(x1, y1, x2, y2, exclusion=0.15,
+#' @export
+fourquadplot <- function(x1, y1, x2, y2, 
+                         data=NULL,
+                         exclusion=0.15,
                          exclude_mean=mean(x1+y1+x2+y2, na.rm=TRUE)/4,
                          regress_line="x=y",
                          regress_lty=1, regress_col="black",
@@ -118,6 +122,13 @@ fourquadplot <- function(x1, y1, x2, y2, exclusion=0.15,
                          xlab="Change recorded with method x (x2-x1)", 
                          ylab="Change recorded with method y (y2-y1)", 
                          main="Four quadrant plot", ...) {
+  
+  # If provided a dataframe then use this
+  x1 <- eval(substitute(x1), data, parent.frame())
+  y1 <- eval(substitute(y1), data, parent.frame())
+  x2 <- eval(substitute(x2), data, parent.frame())
+  y2 <- eval(substitute(y2), data, parent.frame())
+  
   x <- x2-x1
   y <- y2-y1
   plot(x, y, type="p", xlab=xlab, ylab=ylab, main=main, ...)
@@ -164,7 +175,8 @@ fourquadplot <- function(x1, y1, x2, y2, exclusion=0.15,
 #' Anesth Analg. 2010; 111: 1180-92
 #' 
 #' @examples <to do>
-#' 
+#'
+#' @export 
 polarplot <- function(x1, y1, x2, y2, axis_ticks=5, limit_type="fraction",
                       limit_var=0.1,
                       main = "Polar plot", ...) {

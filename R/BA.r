@@ -15,6 +15,8 @@
 #'   NULL if only one pair of measures per subject.
 #' @param method A factor vector identifying the method used for x. Ignored 
 #'   if y defined.
+#' @param methodlevels An optional character vector specifying two levels of 
+#'   the factor method to be included in the comparison   
 #' @param data An optional dataframe containing x, y, subject and/or method  
 #' @param xlab x axis label
 #' @param ylab y axis label
@@ -22,12 +24,15 @@
 #' @param ... Other parameters to be passed to plot()
 #'
 #' @references Bland JM, Altman DG. Statistical Methods in Medical Research 1999; 8: 135-160
+#'   Bland JM, Altman DG. Journal of Biopharmaceutical Statistics 2007; 17(4): 571-582
 #'
 #' @examples <to do> 
 #' 
+#' @export
 BAplot <- function(x, y=NULL, limit=1.96,
                    subject=NULL,
                    method=NULL,
+                   methodlevels=NULL,
                    data=NULL,
                    xlab="Average of x & y",
                    ylab="Difference, x-y",
@@ -93,19 +98,57 @@ BAplot <- function(x, y=NULL, limit=1.96,
       if(length(x) != length(method)) 
         stop("x and method should be equal length")
       if(length(x) != length(subject))
-        stop("x and subject should be the same lenght")
+        stop("x and subject should be the same length")
       if(!is.factor(method)) stop("method should be a factor")
       if(nlevels(method) < 2) stop("method should have at least two levels")
       
-      # Could have bit here allowing user to specify levels from measure.method
-      methlevels <- levels(method)
+      # Allow user to specify levels from method
+      if(is.null(methodlevels)) methodlevels <- levels(method)[1:2]
+      else {
+        if(length(methodlevels) < 2) {
+          warning("Invalid methodlevels - using first two levels of method instead")
+          methodlevels <- levels(method)[1:2]
+        }
+        else if(length(methodlevels) > 2) {
+          warning("methodlevels has more than two items - using first two")
+          methodlevels <- methodlevels[1:2]
+        }
+        levelcheck <- methodlevels %in% levels(method)
+        if(!(levelcheck[1] & levelcheck[2])) {
+          warning("methodlevels contains items that are not levels of method.
+                  Using first two levels of method instead")
+          methodlevels <- levels(method)[1:2]
+        }
+      }
+      
       tempdf <- data.frame(x, subject, method)
-      # <to do>
-      # Now cycle through subject and calculate 
-      #   mean x per subject
-      #   mean x per subject & measure.method == methlevels[1]
-      #   mean x per subject & measure.method == methlevels[2]
+
+      tempx <- tempdf[tempdf$method==methodlevels[1],]
+      anovax <- anova(lm(x~subject, data=tempx))
+      avgx <- aggregate(tempx["x"], by=tempx["subject"], FUN=mean)
+      mix <- aggregate(tempx["x"], by=tempx["subject"], FUN=length)
+      divx <- 1 - ((1/nrow(mix))*(sum(1/mix[,2])))
+      
+      tempy <- tempdf[tempdf$method==methodlevels[2],]
+      anovay <- anova(lm(x~subject, data=tempy))
+      avgy <- aggregate(tempy["x"], by=tempy["subject"], FUN=mean)
+      miy <- aggregate(tempy["x"], by=tempy["subject"], FUN=length)
+      divy <- 1 - ((1/nrow(miy))*(sum(1/miy[,2])))
+      
+      stdev <- sqrt(var(avgx[,2]-avgy[,2]) + divx*anovax[2,3] + divy*anovay[2,3])
+      LA <- weighted.mean(avgx[,2]-avgy[,2], w=mix[,2]+miy[,2]) + c(0-limit, limit) * stdev
+      
+      plot((avgx[,2]+avgy[,2])/2, (avgx[,2]-avgy[,2]), 
+           type="p", xlab=xlab, ylab=ylab, main=main, ...)
+      abline(h=0, lty=2)
+      abline(h=LA[1])
+      abline(h=LA[2])
+      
+      #<to do>
+      # Handle if one subject has no measures by one method
+      # ?? Denote mi in avergaed plot
+      # ?? Handle plot size so limit lines always included
+      # Bias line??
     }  
   }
-
 }
