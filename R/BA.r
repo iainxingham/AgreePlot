@@ -9,7 +9,7 @@
 #' 
 #' @param x,y Either two numeric vectors containing paired measurements made with
 #'   different methods or a single numeric vector x with y=NULL and method defined.
-#' @param limit Number of standard deviations each side of \code{mean(x-y)}
+#' @param limit Number of standard deviations each side of the mean difference
 #'   to draw the limits of agreement. Defaults to 1.96.
 #' @param subject A factor vector identifying the subject for replicates. 
 #'   NULL if only one pair of measures per subject.
@@ -17,7 +17,13 @@
 #'   if y defined.
 #' @param methodlevels An optional character vector specifying two levels of 
 #'   the factor method to be included in the comparison   
-#' @param data An optional dataframe containing x, y, subject and/or method  
+#' @param data An optional dataframe containing x, y, subject and/or method
+#' @param annotation Determines what annotation to add to the plot. Possible
+#'   values include 
+#'     \code{"zero"}    Plot a horizontal line at difference = zero
+#'     \code{"bias"}    Plot a horizontal line at mean difference
+#'     \code{"limits"}  Plot limits of agreement at +/- \code{limit} standard
+#'                      deviations from the mean difference 
 #' @param xlab x axis label
 #' @param ylab y axis label
 #' @param main Plot title
@@ -34,6 +40,7 @@ BAplot <- function(x, y=NULL, limit=1.96,
                    method=NULL,
                    methodlevels=NULL,
                    data=NULL,
+                   annotation=c("zero", "bias", "limits"),
                    xlab="Average of x & y",
                    ylab="Difference, x-y",
                    main="Bland Altman plot",
@@ -53,12 +60,27 @@ BAplot <- function(x, y=NULL, limit=1.96,
     # Paired x and y, no replicates    
     if(length(x) != length(y)) stop("Need paired measurements in x and y 
                                     if subject not defined")
-    LA <- mean(x-y, na.rm=TRUE) + c(0-limit, limit)*sd(x-y, na.rm=TRUE)  
-    plot((x+y)/2, (x-y), type="p", xlab=xlab, ylab=ylab, 
-         main=main, ...)
-    abline(h=0, lty=2)
-    abline(h=LA[1])
-    abline(h=LA[2])
+    
+    # Remove NAs
+    nas <- is.na(x) | is.na(y)
+    if(sum(nas) > 0) {
+      warning("Excluding observations with missing data")
+      x <- x[!nas]
+      y <- y[!nas]
+    }
+    
+    LA <- mean(x-y) + c(0-limit, limit)*sd(x-y)  
+    
+    plot(c(max((x+y)/2), min((x+y)/2)), c(max(LA[2], (x-y)), min(LA[1], (x-y))), 
+         type="n", xlab=xlab, ylab=ylab, main=main, ...)
+    points((x+y)/2, (x-y))
+    
+    if("bias" %in% annotation) abline(h=mean(x-y))
+    if("zero" %in% annotation) abline(h=0, lty=2)
+    if("limits" %in% annotation) {
+      abline(h=LA[1])
+      abline(h=LA[2])
+    }
   }
     
   # Subject defined
@@ -70,6 +92,15 @@ BAplot <- function(x, y=NULL, limit=1.96,
       if(length(x) != length(subject))
         stop("Subject and x vectors should be equal length")
       if(!is.factor(subject)) stop("Subject should be a factor")
+
+      # Remove NAs
+      nas <- is.na(x) | is.na(y) | is.na(subject)
+      if(sum(nas) > 0) {
+        warning("Excluding observations with missing data")
+        x <- x[!nas]
+        y <- y[!nas]
+        subject <- subject[!nas]
+      }
       
       tempdf <- data.frame(x, y, subject, diff=(x-y))
       anova_result <- anova(lm(diff~subject, data = tempdf))
@@ -86,11 +117,16 @@ BAplot <- function(x, y=NULL, limit=1.96,
                       ((anova_result[1,3] - anova_result[2,3])/divisor))
       LA <- mean(x-y) + c(0-limit, limit) * stdev 
       
-      plot((x+y)/2, x-y, type="p", xlab=xlab, ylab=ylab, 
-           main=main, ...)
-      abline(h=0, lty=2)
-      abline(h=LA[1])
-      abline(h=LA[2])
+      plot(c(max((x+y)/2), min((x+y)/2)), c(max(LA[2], (x-y)), min(LA[1], (x-y))), 
+           type="n", xlab=xlab, ylab=ylab, main=main, ...)
+      points((x+y)/2, x-y)
+      
+      if("bias" %in% annotation) abline(h=mean(x-y))
+      if("zero" %in% annotation) abline(h=0, lty=2)
+      if("limits" %in% annotation) {
+        abline(h=LA[1])
+        abline(h=LA[2])
+      }
     }
     
     # x only, method defined
@@ -101,6 +137,16 @@ BAplot <- function(x, y=NULL, limit=1.96,
         stop("x and subject should be the same length")
       if(!is.factor(method)) stop("method should be a factor")
       if(nlevels(method) < 2) stop("method should have at least two levels")
+      
+      # Remove NAs
+      nas <- is.na(x) | is.na(subject) | is.na(method)
+      if(sum(nas) > 0) {
+        warning("Excluding observations with missing data")
+        x <- x[!nas]
+        subject <- subject[!nas]
+        method <- method[!nas]
+      }
+      
       
       # Allow user to specify levels from method
       if(is.null(methodlevels)) methodlevels <- levels(method)[1:2]
@@ -150,16 +196,21 @@ BAplot <- function(x, y=NULL, limit=1.96,
       stdev <- sqrt(var(avgx[,2]-avgy[,2]) + divx*anovax[2,3] + divy*anovay[2,3])
       LA <- weighted.mean(avgx[,2]-avgy[,2], w=mix[,2]+miy[,2]) + c(0-limit, limit) * stdev
       
-      plot((avgx[,2]+avgy[,2])/2, (avgx[,2]-avgy[,2]), 
-           type="p", xlab=xlab, ylab=ylab, main=main, ...)
-      abline(h=0, lty=2)
-      abline(h=LA[1])
-      abline(h=LA[2])
+      plot(c(max((avgx[,2]+avgy[,2])/2), min((avgx[,2]+avgy[,2])/2)), 
+           c(max(LA[2], (avgx[,2]-avgy[,2])), min(LA[1], (avgx[,2]-avgy[,2]))), 
+           type="n", xlab=xlab, ylab=ylab, main=main, ...)
+      points((avgx[,2]+avgy[,2])/2, (avgx[,2]-avgy[,2]))
+
+      if("bias" %in% annotation) 
+        abline(h=weighted.mean(avgx[,2]-avgy[,2], w=mix[,2]+miy[,2]))
+      if("zero" %in% annotation) abline(h=0, lty=2)
+      if("limits" %in% annotation) {
+        abline(h=LA[1])
+        abline(h=LA[2])
+      }
       
       #<to do>
       # ?? Denote mi in averaged plot
-      # ?? Handle plot size so limit lines always included
-      # Bias line??
     }  
   }
 }
