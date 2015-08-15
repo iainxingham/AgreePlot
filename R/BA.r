@@ -124,15 +124,27 @@ BAplot <- function(x, y=NULL, limit=1.96,
       tempdf <- data.frame(x, subject, method)
 
       tempx <- tempdf[tempdf$method==methodlevels[1],]
+      tempy <- tempdf[tempdf$method==methodlevels[2],]
+      mix <- aggregate(tempx["x"], by=tempx["subject"], FUN=length)
+      miy <- aggregate(tempy["x"], by=tempy["subject"], FUN=length)
+
+      # Check for subjects with no measurements by one method and remove
+      noy <- mix$subject %in% miy$subject
+      nox <- miy$subject %in% mix$subject
+      if((!(sum(nox) == length(nox))) | (!(sum(noy) == length(noy)))) {
+        warning("One or more subjects have measurements by one method only")
+        tempx <- tempx[tempx$subject %in% mix$subject[noy],]
+        tempy <- tempy[tempy$subject %in% miy$subject[nox],]
+        mix <- aggregate(tempx["x"], by=tempx["subject"], FUN=length)
+        miy <- aggregate(tempy["x"], by=tempy["subject"], FUN=length)
+      }
+      
       anovax <- anova(lm(x~subject, data=tempx))
       avgx <- aggregate(tempx["x"], by=tempx["subject"], FUN=mean)
-      mix <- aggregate(tempx["x"], by=tempx["subject"], FUN=length)
       divx <- 1 - ((1/nrow(mix))*(sum(1/mix[,2])))
       
-      tempy <- tempdf[tempdf$method==methodlevels[2],]
       anovay <- anova(lm(x~subject, data=tempy))
       avgy <- aggregate(tempy["x"], by=tempy["subject"], FUN=mean)
-      miy <- aggregate(tempy["x"], by=tempy["subject"], FUN=length)
       divy <- 1 - ((1/nrow(miy))*(sum(1/miy[,2])))
       
       stdev <- sqrt(var(avgx[,2]-avgy[,2]) + divx*anovax[2,3] + divy*anovay[2,3])
@@ -145,8 +157,7 @@ BAplot <- function(x, y=NULL, limit=1.96,
       abline(h=LA[2])
       
       #<to do>
-      # Handle if one subject has no measures by one method
-      # ?? Denote mi in avergaed plot
+      # ?? Denote mi in averaged plot
       # ?? Handle plot size so limit lines always included
       # Bias line??
     }  
